@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Asistente de Voz IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Partículas animadas de fondo */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.8; }
+        }
+
+        /* Contenedor principal */
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 1s ease-out;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            font-weight: 300;
+        }
+
+        /* Asistente principal */
+        .assistant-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .bot-avatar {
+            width: clamp(200px, 40vw, 300px);
+            height: clamp(200px, 40vw, 300px);
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            position: relative;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bot-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 25px 80px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .bot-avatar.speaking {
+            animation: speaking 0.5s infinite alternate;
+            box-shadow: 
+                0 20px 60px rgba(102, 126, 234, 0.5),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes speaking {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+            }
+            100% { 
+                transform: scale(1.05);
+                box-shadow: 0 25px 80px rgba(102, 126, 234, 0.7);
+            }
+        }
+
+        .bot-face {
+            font-size: clamp(80px, 15vw, 120px);
+            color: #667eea;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+
+        .bot-eyes {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+        }
+
+        .eye {
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: blink 3s infinite;
+        }
+
+        @keyframes blink {
+            0%, 95%, 100% { transform: scaleY(1); }
+            97.5% { transform: scaleY(0.1); }
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .control-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: all 0.5s;
+        }
+
+        .control-btn:hover:before {
+            left: 100%;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.6);
+        }
+
+        .secondary-btn {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            box-shadow: 0 8px 25px rgba(116, 185, 255, 0.4);
+        }
+
+        .secondary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(116, 185, 255, 0.6);
+        }
+
+        /* Panel de estado */
+        .status-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            animation: slideUp 1s ease-out;
+        }
+
+        .status-text {
+            color: white;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .wave-visualizer {
+            height: 60px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            margin: 20px 0;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 2px;
+            animation: wave 1.5s infinite ease-in-out;
+        }
+
+        .wave-bar:nth-child(2n) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3n) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4n) { animation-delay: 0.3s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; opacity: 0.5; }
+            50% { height: 40px; opacity: 1; }
+        }
+
+        /* ElevenLabs Widget Container */
+        .widget-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Animaciones de entrada */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-btn {
+                width: 80%;
+                max-width: 300px;
+            }
+            
+            .widget-container {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                right: 10px;
+            }
+        }
+
+        /* Efectos adicionales */
+        .glow {
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+            to { box-shadow: 0 0 40px rgba(102, 126, 234, 0.8); }
+        }
+
+        /* Modo oscuro automático */
+        @media (prefers-color-scheme: dark) {
+            .status-panel {
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Partículas animadas -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🤖 Mi Asistente IA</h1>
+            <p>Tu compañero inteligente con tecnología ElevenLabs</p>
+        </header>
+
+        <!-- Asistente principal -->
+        <div class="assistant-container">
+            <div class="bot-avatar" id="botAvatar">
+                <div class="bot-face">🎙️</div>
+                <div class="bot-eyes">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="controls">
+                <button class="control-btn primary-btn" onclick="toggleListening()">
+                    🎤 Activar Voz
+                </button>
+                <button class="control-btn secondary-btn" onclick="testAudio()">
+                    🔊 Test Audio
+                </button>
+                <button class="control-btn secondary-btn" onclick="resetAssistant()">
+                    🔄 Reiniciar
+                </button>
+                <button class="control-btn secondary-btn" onclick="toggleSettings()">
+                    ⚙️ Configurar
+                </button>
+            </div>
+            
+            <!-- Control de volumen -->
+            <div class="volume-control" style="margin: 20px 0;">
+                <label style="color: white; display: block; margin-bottom: 10px;">
+                    🔊 Volumen del Sistema: <span id="volumeValue">100%</span>
+                </label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="100" 
+                       style="width: 100%; max-width: 300px;" onchange="adjustVolume(this.value)">
+            </div>
+
+            <!-- Panel de estado -->
+            <div class="status-panel" id="statusPanel">
+                <div class="status-text" id="statusText">
+                    Listo para escucharte... 👂
+                </div>
+                <div class="wave-visualizer" id="visualizer" style="display: none;">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ElevenLabs Widget -->
+    <div class="widget-container">
+        <div id="widget-status" style="color: #666; font-size: 12px; margin-bottom: 10px;">
+            Cargando asistente...
+        </div>
+        <elevenlabs-convai 
+            agent-id="agent_6801k2qcmszsewktff6gwt7p55qv"
+            style="width: 100%; height: auto;">
+        </elevenlabs-convai>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+    
+    <script>
+        // Variables globales
+        let isListening = false;
+        let isProcessing = false;
+        let particleCount = 50;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            initializeAssistant();
+            setupEventListeners();
+        });
+
+        // Crear partículas animadas
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Inicializar asistente
+        function initializeAssistant() {
+            updateStatus('🎯 Asistente inicializado correctamente');
+            
+            // Efecto de bienvenida
+            setTimeout(() => {
+                const botAvatar = document.getElementById('botAvatar');
+                botAvatar.classList.add('glow');
+                
+                setTimeout(() => {
+                    botAvatar.classList.remove('glow');
+                }, 2000);
+            }, 1000);
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            const botAvatar = document.getElementById('botAvatar');
+            
+            // Click en el avatar
+            botAvatar.addEventListener('click', function() {
+                if (!isListening) {
+                    toggleListening();
+                }
+            });
+
+            // Verificar carga del widget
+            checkWidgetStatus();
+
+            // Detectar eventos del widget de ElevenLabs
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'elevenlabs') {
+                    handleElevenLabsEvent(event.data);
+                }
+            });
+
+            // Responsive particles
+            window.addEventListener('resize', function() {
+                // Ajustar partículas según el tamaño de pantalla
+                particleCount = window.innerWidth < 768 ? 30 : 50;
+            });
+        }
+
+        // Verificar estado del widget
+        function checkWidgetStatus() {
+            const statusDiv = document.getElementById('widget-status');
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const checkInterval = setInterval(() => {
+                const widget = document.querySelector('elevenlabs-convai');
+                attempts++;
+                
+                if (widget && widget.shadowRoot) {
+                    statusDiv.textContent = '✅ Asistente conectado';
+                    statusDiv.style.color = '#4CAF50';
+                    clearInterval(checkInterval);
+                    
+                    // Solicitar permisos de micrófono
+                    requestMicrophonePermission();
+                } else if (attempts >= maxAttempts) {
+                    statusDiv.textContent = '❌ Error de conexión';
+                    statusDiv.style.color = '#f44336';
+                    clearInterval(checkInterval);
+                }
+            }, 1000);
+        }
+
+        // Solicitar permisos de micrófono
+        async function requestMicrophonePermission() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('✅ Micrófono autorizado');
+                updateStatus('🎤 Micrófono listo - Puedes hablar');
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                console.error('❌ Error de micrófono:', error);
+                updateStatus('❌ Necesitas autorizar el micrófono');
+            }
+        }
+
+        // Test de audio del sistema
+        function testAudio() {
+            updateStatus('🔊 Probando audio del sistema...');
+            
+            // Crear un tono de prueba
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 440; // Nota A4
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+                updateStatus('🔊 Test de audio completado');
+            }, 1000);
+            
+            // Verificar volumen del navegador
+            checkBrowserAudio();
+        }
+
+        // Verificar audio del navegador
+        function checkBrowserAudio() {
+            const widget = document.querySelector('elevenlabs-convai');
+            if (widget) {
+                // Buscar elementos de audio dentro del widget
+                setTimeout(() => {
+                    const audioElements = document.querySelectorAll('audio');
+                    console.log(`🔊 Elementos de audio encontrados: ${audioElements.length}`);
+                    
+                    audioElements.forEach((audio, index) => {
+                        console.log(`Audio ${index + 1}:`, {
+                            volume: audio.volume,
+                            muted: audio.muted,
+                            paused: audio.paused,
+                            src: audio.src
+                        });
+                        
+                        // Asegurar que no esté muteado y tenga volumen
+                        audio.muted = false;
+                        audio.volume = 1.0;
+                    });
+                }, 2000);
+            }
+        }
+
+        // Ajustar volumen
+        function adjustVolume(value) {
+            const volumeDisplay = document.getElementById('volumeValue');
+            volumeDisplay.textContent = value + '%';
+            
+            // Aplicar a todos los elementos de audio
+            const audioElements = document.querySelectorAll('audio');
+            audioElements.forEach(audio => {
+                audio.volume = value / 100;
+                console.log(`🔊 Volumen ajustado a: ${value}%`);
+            });
+            
+            // También intentar ajustar el volumen del widget
+            const widget = document.querySelector('elevenlabs-convai');
+            if (widget && widget.shadowRoot) {
+                const shadowAudios = widget.shadowRoot.querySelectorAll('audio');
+                shadowAudios.forEach(audio => {
+                    audio.volume = value / 100;
+                    audio.muted = false;
+                });
+            }
+        }
+
+        // Forzar inicialización de audio
+        function forceAudioInit() {
+            // Crear un contexto de audio para "despertar" el navegador
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('🔊 Contexto de audio activado');
+                    updateStatus('🔊 Audio del sistema activado');
+                });
+            }
+        }
+
+        // Manejar eventos de ElevenLabs
+        function handleElevenLabsEvent(data) {
+            const botAvatar = document.getElementById('botAvatar');
+            
+            switch(data.event) {
+                case 'speaking':
+                    botAvatar.classList.add('speaking');
+                    updateStatus('🗣️ Hablando...');
+                    showVisualizer(true);
+                    break;
+                case 'listening':
+                    botAvatar.classList.remove('speaking');
+                    updateStatus('👂 Escuchando...');
+                    showVisualizer(true);
+                    break;
+                case 'idle':
+                    botAvatar.classList.remove('speaking');
+                    updateStatus('😴 En espera...');
+                    showVisualizer(false);
+                    break;
+                case 'processing':
+                    updateStatus('🧠 Procesando tu mensaje...');
+                    showVisualizer(true);
+                    break;
+            }
+        }
+
+        // Toggle listening
+        function toggleListening() {
+            const button = event.target;
+            const botAvatar = document.getElementById('botAvatar');
+            
+            isListening = !isListening;
+            
+            if (isListening) {
+                button.textContent = '🛑 Detener';
+                button.style.background = 'linear-gradient(135deg, #e17055, #d63031)';
+                botAvatar.classList.add('glow');
+                updateStatus('👂 Escuchando... Habla ahora');
+                showVisualizer(true);
+                
+                // Simular activación del widget
+                simulateVoiceActivation();
+            } else {
+                button.textContent = '🎤 Activar Voz';
+                button.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a24)';
+                botAvatar.classList.remove('glow');
+                updateStatus('✋ Detenido - Listo para nueva activación');
+                showVisualizer(false);
+            }
+        }
+
+        // Simular activación de voz
+        function simulateVoiceActivation() {
+            // Aquí puedes integrar con la API de ElevenLabs
+            setTimeout(() => {
+                if (isListening) {
+                    updateStatus('🧠 Analizando tu voz...');
+                    
+                    setTimeout(() => {
+                        if (isListening) {
+                            updateStatus('🎯 Respuesta preparada');
+                            simulateResponse();
+                        }
+                    }, 2000);
+                }
+            }, 3000);
+        }
+
+        // Simular respuesta
+        function simulateResponse() {
+            const botAvatar = document.getElementById('botAvatar');
+            botAvatar.classList.add('speaking');
+            updateStatus('🗣️ Respondiendo...');
+            
+            setTimeout(() => {
+                botAvatar.classList.remove('speaking');
+                updateStatus('✅ Respuesta completada');
+                showVisualizer(false);
+                
+                // Auto-reset después de responder
+                setTimeout(() => {
+                    if (isListening) {
+                        updateStatus('👂 Listo para siguiente pregunta...');
+                    }
+                }, 1500);
+            }, 4000);
+        }
+
+        // Mostrar/ocultar visualizador
+        function showVisualizer(show) {
+            const visualizer = document.getElementById('visualizer');
+            visualizer.style.display = show ? 'flex' : 'none';
+        }
+
+        // Actualizar estado
+        function updateStatus(message) {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = message;
+            
+            // Efecto de pulso en el panel
+            const statusPanel = document.getElementById('statusPanel');
+            statusPanel.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                statusPanel.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        // Reiniciar asistente
+        function resetAssistant() {
+            isListening = false;
+            isProcessing = false;
+            
+            const botAvatar = document.getElementById('botAvatar');
+            const button = document.querySelector('.primary-btn');
+            
+            botAvatar.classList.remove('speaking', 'glow');
+            button.textContent = '🎤 Activar Voz';
+            button.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a24)';
+            
+            showVisualizer(false);
+            updateStatus('🔄 Sistema reiniciado - Listo para usar');
+            
+            // Efecto visual de reinicio
+            botAvatar.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                botAvatar.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+
+        // Toggle configuraciones (placeholder)
+        function toggleSettings() {
+            updateStatus('⚙️ Panel de configuraciones próximamente...');
+            
+            // Aquí puedes agregar un modal de configuraciones
+            const settings = {
+                voice: 'español',
+                speed: 'normal',
+                volume: 'alto'
+            };
+            
+            console.log('Configuraciones actuales:', settings);
+        }
+
+        // Funciones adicionales para mejorar la experiencia móvil
+        
+        // Prevenir zoom en doble tap en móviles
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Detectar orientación en móviles
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                // Reajustar elementos después del cambio de orientación
+                const container = document.querySelector('.container');
+                container.style.minHeight = window.innerHeight + 'px';
+            }, 500);
+        });
+
+        // Optimización de rendimiento
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Intersection Observer para animaciones
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        // Observar elementos para animaciones
+        document.querySelectorAll('.status-panel, .controls').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
