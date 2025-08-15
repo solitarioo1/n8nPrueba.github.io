@@ -166,8 +166,18 @@
         </div>
     </div>
 
-    <!-- Widget de ElevenLabs oculto -->
-    <div class="hidden-widget">
+    <!-- Widget de ElevenLabs VISIBLE para testing -->
+    <div id="widget-container" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.95);
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 1000;
+    ">
+        <div style="color: #333; font-size: 12px; margin-bottom: 10px;">Widget ElevenLabs:</div>
         <elevenlabs-convai agent-id="agent_6801k2qcmszsewktff6gwt7p55qv"></elevenlabs-convai>
     </div>
 
@@ -181,187 +191,83 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Inicializando asistente...');
+            updateStatus('🔄 Inicializando...');
             
-            // Solicitar permisos de micrófono inmediatamente
+            // Solicitar permisos de micrófono
             requestMicrophonePermission();
             
-            // Esperar a que se cargue el widget
+            // Buscar widget cada segundo
+            const widgetChecker = setInterval(() => {
+                elevenLabsWidget = document.querySelector('elevenlabs-convai');
+                if (elevenLabsWidget) {
+                    console.log('✅ Widget encontrado!');
+                    isReady = true;
+                    updateStatus('✅ Listo! Usa el widget de ElevenLabs o el botón teléfono');
+                    clearInterval(widgetChecker);
+                } else {
+                    console.log('⏳ Buscando widget...');
+                    updateStatus('⏳ Cargando asistente...');
+                }
+            }, 1000);
+            
+            // Timeout después de 15 segundos
             setTimeout(() => {
-                checkWidget();
-            }, 3000);
+                if (!isReady) {
+                    clearInterval(widgetChecker);
+                    updateStatus('❌ Error: Widget no cargó. Intenta recargar la página');
+                }
+            }, 15000);
         });
 
         async function requestMicrophonePermission() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log('✅ Permisos de micrófono concedidos');
+                console.log('✅ Permisos de micrófono OK');
                 stream.getTracks().forEach(track => track.stop());
-                updateStatus('✅ Micrófono autorizado - Esperando asistente...');
             } catch (error) {
-                console.error('❌ Error de permisos:', error);
-                updateStatus('❌ Necesitas autorizar el micrófono para usar el asistente');
-            }
-        }
-
-        function checkWidget() {
-            elevenLabsWidget = document.querySelector('elevenlabs-convai');
-            if (elevenLabsWidget) {
-                console.log('✅ Widget de ElevenLabs encontrado');
-                isReady = true;
-                updateStatus('🎯 Listo para usar - Haz clic en el teléfono');
-            } else {
-                console.log('⏳ Widget no encontrado, reintentando...');
-                updateStatus('⏳ Cargando asistente...');
-                setTimeout(() => checkWidget(), 2000);
+                console.error('❌ Error de micrófono:', error);
+                updateStatus('❌ AUTORIZA el micrófono en tu navegador');
             }
         }
 
         function toggleMicrophone() {
+            const micButton = document.getElementById('micButton');
+            
             if (!isReady) {
-                updateStatus('⏳ Esperando que se cargue el asistente...');
+                updateStatus('⚠️ Widget no está listo. Usa el widget de ElevenLabs directamente');
                 return;
             }
 
-            const micButton = document.getElementById('micButton');
-            
+            // Simplemente cambiar el estado visual
             if (!isListening) {
-                // Activar micrófono
                 isListening = true;
                 micButton.classList.add('listening');
                 micButton.innerHTML = '🎤';
-                updateStatus('🎤 Escuchando... Habla ahora');
-                
-                // Intentar activar el widget de ElevenLabs
-                activateElevenLabsWidget();
-                
+                updateStatus('💡 También puedes usar el widget de ElevenLabs directamente');
             } else {
-                // Desactivar micrófono
                 isListening = false;
                 micButton.classList.remove('listening', 'active');
                 micButton.innerHTML = '📞';
-                updateStatus('✋ Conversación finalizada - Haz clic para hablar de nuevo');
-            }
-        }
-
-        function activateElevenLabsWidget() {
-            if (elevenLabsWidget) {
-                try {
-                    // Intentar encontrar el botón del micrófono en el shadow DOM
-                    const shadowRoot = elevenLabsWidget.shadowRoot;
-                    if (shadowRoot) {
-                        const buttons = shadowRoot.querySelectorAll('button');
-                        const micButton = Array.from(buttons).find(btn => 
-                            btn.textContent.includes('🎤') || 
-                            btn.textContent.toLowerCase().includes('mic') ||
-                            btn.className.toLowerCase().includes('mic')
-                        );
-                        
-                        if (micButton) {
-                            micButton.click();
-                            console.log('🎯 Widget de ElevenLabs activado automáticamente');
-                            updateStatus('🎯 Widget activado - Habla ahora');
-                        } else {
-                            console.log('⚠️ No se encontró el botón del micrófono en el widget');
-                            updateStatus('⚠️ Busca y haz clic en el micrófono del widget de ElevenLabs');
-                        }
-                    }
-                } catch (error) {
-                    console.log('❌ Error al activar automáticamente:', error);
-                    updateStatus('⚠️ Activa manualmente el micrófono en el widget de ElevenLabs');
-                }
+                updateStatus('✅ Usa cualquiera de los dos botones');
             }
         }
 
         function updateStatus(message) {
             const statusText = document.getElementById('statusText');
             statusText.textContent = message;
-            console.log('📢 Status:', message);
+            console.log('📢', message);
         }
 
-        // Detectar eventos del widget de ElevenLabs
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'elevenlabs') {
-                const micButton = document.getElementById('micButton');
-                
-                console.log('📡 Evento de ElevenLabs:', event.data);
-                
-                switch(event.data.action) {
-                    case 'speaking':
-                        micButton.classList.remove('listening');
-                        micButton.classList.add('active');
-                        micButton.innerHTML = '🗣️';
-                        updateStatus('🗣️ El asistente está hablando...');
-                        break;
-                    case 'listening':
-                        micButton.classList.add('listening');
-                        micButton.classList.remove('active');
-                        micButton.innerHTML = '👂';
-                        updateStatus('👂 Escuchando tu voz...');
-                        break;
-                    case 'idle':
-                    case 'ended':
-                        micButton.classList.remove('active', 'listening');
-                        micButton.innerHTML = '📞';
-                        updateStatus('✅ Conversación terminada - Listo para nueva conversación');
-                        isListening = false;
-                        break;
-                    case 'error':
-                        micButton.classList.remove('active', 'listening');
-                        micButton.innerHTML = '❌';
-                        updateStatus('❌ Error en el asistente - Intenta de nuevo');
-                        isListening = false;
-                        break;
-                }
+        // Log para debugging
+        setInterval(() => {
+            if (elevenLabsWidget) {
+                console.log('🔍 Widget status:', {
+                    found: !!elevenLabsWidget,
+                    shadowRoot: !!elevenLabsWidget.shadowRoot,
+                    ready: isReady
+                });
             }
-        });
-
-        // Detectar cuando el usuario interactúa con el widget directamente
-        document.addEventListener('click', function(event) {
-            // Si el clic fue en el área del widget oculto, sincronizar nuestro botón
-            if (isReady && !isListening) {
-                setTimeout(() => {
-                    // Verificar si el widget está activo
-                    checkWidgetState();
-                }, 500);
-            }
-        });
-
-        function checkWidgetState() {
-            if (elevenLabsWidget && elevenLabsWidget.shadowRoot) {
-                try {
-                    const activeElements = elevenLabsWidget.shadowRoot.querySelectorAll('[aria-pressed="true"], .active, .recording');
-                    if (activeElements.length > 0) {
-                        console.log('🎯 Widget activado externamente');
-                        const micButton = document.getElementById('micButton');
-                        isListening = true;
-                        micButton.classList.add('listening');
-                        micButton.innerHTML = '🎤';
-                        updateStatus('🎤 Widget activado - Escuchando...');
-                    }
-                } catch (error) {
-                    console.log('No se pudo verificar el estado del widget');
-                }
-            }
-        }
-
-        // Mostrar el widget temporalmente para debugging (opcional)
-        function showWidget() {
-            const hiddenDiv = document.querySelector('.hidden-widget');
-            hiddenDiv.style.position = 'fixed';
-            hiddenDiv.style.bottom = '10px';
-            hiddenDiv.style.right = '10px';
-            hiddenDiv.style.left = 'auto';
-            hiddenDiv.style.opacity = '1';
-            hiddenDiv.style.pointerEvents = 'auto';
-            hiddenDiv.style.background = 'rgba(255,255,255,0.9)';
-            hiddenDiv.style.padding = '10px';
-            hiddenDiv.style.borderRadius = '10px';
-            hiddenDiv.style.zIndex = '9999';
-            console.log('🔍 Widget visible para debugging');
-        }
-
-        // Función para debugging - descomenta la siguiente línea si quieres ver el widget
-        // setTimeout(showWidget, 5000);
+        }, 5000);
     </script>
 </body>
 </html>
